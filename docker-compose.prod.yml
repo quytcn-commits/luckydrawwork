@@ -5,11 +5,11 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_API_URL=https://luckydraw.work
+        - NEXT_PUBLIC_WS_URL=wss://luckydraw.work
     container_name: luckydraw_frontend
     restart: always
-    environment:
-      - NEXT_PUBLIC_API_URL=https://luckydraw.work
-      - NEXT_PUBLIC_WS_URL=wss://luckydraw.work
 
   backend:
     build:
