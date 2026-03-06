@@ -410,92 +410,136 @@ export default function RoomDetailPage() {
         )}
 
         {/* ===== DRAW VIEW ===== */}
-        {view === "draw" && (
+        {view === "draw" && (() => {
+          // Find current prize: first unfinished prize sorted by order DESC (giải 3 → 2 → 1)
+          const currentPrize = sortedPrizes.find((p: any) => !(p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1)));
+          const allDone = !currentPrize;
+          // Completed prizes (drawn before current)
+          const completedPrizes = sortedPrizes.filter((p: any) => p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1));
+
+          const drawnCount = currentPrize ? (currentPrize.winnerIds?.length || 0) : 0;
+          const totalCount = currentPrize ? (currentPrize.winnerCount || 1) : 0;
+
+          return (
           <div className="max-w-2xl mx-auto py-4 sm:py-8">
-            <div className="text-center mb-6 sm:mb-8">
-              <h2 className="text-2xl sm:text-4xl font-bold mb-2">🎰 Quay thưởng</h2>
-              <p className="text-slate-400 text-sm sm:text-base">
-                Còn <strong className="text-white">{eligibleCount}</strong> người trong danh sách
-              </p>
-            </div>
-
-            {currentWinner && (
-              <div className={`text-center mb-6 sm:mb-8 p-6 sm:p-10 rounded-2xl border transition-all duration-500 ${
-                spinning ? "glass border-white/10" : "bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-amber-500/20 border-amber-500/30 animate-winner-glow"
-              }`}>
-                {!spinning && currentPrizeName && (
-                  <p className="text-amber-400/80 text-sm font-medium mb-2 animate-fade-in">{currentPrizeName}</p>
-                )}
-                <p className={`text-3xl sm:text-5xl font-bold mb-3 transition-all duration-300 ${spinning ? "text-white/80" : "text-amber-400"}`}>
-                  {spinning ? (
-                    <span>{currentWinner.displayName || currentWinner.data?.fullName}</span>
-                  ) : (
-                    <span className="animate-fade-in-up inline-block">🏆 {currentWinner.displayName || currentWinner.data?.fullName}</span>
-                  )}
-                </p>
-                {!spinning && currentWinner.data && (
-                  <div className="text-slate-300 animate-fade-in-up text-sm sm:text-base">
-                    {Object.entries(currentWinner.data).map(([key, val]) => (
-                      <span key={key} className="mx-2">{String(val)}</span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {sortedPrizes.map((prize: any, index: number) => {
-                const drawnCount = prize.winnerIds?.length || 0;
-                const totalCount = prize.winnerCount || 1;
-                const isFullyDrawn = prize.drawn || drawnCount >= totalCount;
-                const isPartiallyDrawn = drawnCount > 0 && !isFullyDrawn;
-
+            {/* Progress indicator */}
+            <div className="flex items-center justify-center gap-2 mb-6">
+              {sortedPrizes.map((p: any, i: number) => {
+                const done = p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1);
+                const isCurrent = currentPrize?.id === p.id;
                 return (
-                  <div key={prize.id}
-                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
-                      isFullyDrawn ? "glass opacity-60" : isPartiallyDrawn ? "glass border-amber-500/30" : "glass hover:bg-white/10"
-                    }`}>
-                    <div className="flex items-center gap-3 mb-3 sm:mb-0">
-                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold flex-shrink-0 ${
-                        isFullyDrawn ? "bg-emerald-500/20 text-emerald-400" : isPartiallyDrawn ? "bg-amber-500/20 text-amber-400" : index === 0 ? "bg-amber-500/20 text-amber-400" : "bg-indigo-500/20 text-indigo-400"
-                      }`}>{isFullyDrawn ? "✓" : prize.order}</div>
-                      <div>
-                        <h3 className="font-semibold text-base sm:text-lg">{prize.name}</h3>
-                        <p className="text-xs sm:text-sm text-slate-400">
-                          {totalCount} người trúng · Thứ tự: {prize.order}
-                          {drawnCount > 0 && !isFullyDrawn && (
-                            <span className="text-amber-400 ml-2">· Đã quay {drawnCount}/{totalCount}</span>
-                          )}
-                        </p>
-                        {isPartiallyDrawn && (
-                          <div className="mt-1.5 w-32 h-1.5 bg-white/10 rounded-full overflow-hidden">
-                            <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(drawnCount / totalCount) * 100}%` }} />
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    {isFullyDrawn ? (
-                      <span className="btn-success !py-2 text-xs sm:text-sm w-full sm:w-auto text-center">✓ Đã quay xong</span>
-                    ) : (
-                      <button onClick={() => handleDrawPrize(prize.id, prize.name)} disabled={spinning}
-                        className="btn-primary !py-2.5 text-sm w-full sm:w-auto disabled:opacity-50">
-                        {spinning ? "Đang quay..." : `🎲 Quay giải này (${drawnCount + 1}/${totalCount})`}
-                      </button>
-                    )}
+                  <div key={p.id} className="flex items-center gap-2">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all ${
+                      done ? "bg-emerald-500/30 text-emerald-400" : isCurrent ? "bg-indigo-500/30 text-indigo-400 ring-2 ring-indigo-400/50" : "bg-white/5 text-slate-600"
+                    }`}>{done ? "✓" : p.order}</div>
+                    {i < sortedPrizes.length - 1 && <div className={`w-6 sm:w-10 h-0.5 ${done ? "bg-emerald-500/40" : "bg-white/10"}`} />}
                   </div>
                 );
               })}
             </div>
 
-            {sortedPrizes.every((p: any) => p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1)) && (
-              <div className="text-center mt-8 card py-8">
-                <div className="text-5xl mb-4">🎉</div>
-                <h3 className="text-xl font-bold mb-2">Đã quay xong tất cả giải!</h3>
-                <button onClick={loadResults} className="btn-primary mt-2">Xem kết quả</button>
+            {allDone ? (
+              <div className="text-center card py-10">
+                <div className="text-6xl mb-4">🎉</div>
+                <h3 className="text-2xl font-bold mb-2">Đã quay xong tất cả giải!</h3>
+                <p className="text-slate-400 mb-4">{room.eventName}</p>
+                <button onClick={loadResults} className="btn-primary">Xem kết quả</button>
+              </div>
+            ) : (
+              <>
+                {/* Current prize header */}
+                <div className="text-center mb-6 sm:mb-8">
+                  <p className="text-indigo-400 text-sm font-medium mb-1">
+                    Vòng {completedPrizes.length + 1}/{sortedPrizes.length}
+                  </p>
+                  <h2 className="text-2xl sm:text-4xl font-bold mb-2">🎰 {currentPrize.name}</h2>
+                  <p className="text-slate-400 text-sm sm:text-base">
+                    {totalCount} người trúng · Còn <strong className="text-white">{eligibleCount}</strong> người trong danh sách
+                  </p>
+                  {drawnCount > 0 && (
+                    <div className="flex items-center justify-center gap-3 mt-3">
+                      <div className="w-32 h-2 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(drawnCount / totalCount) * 100}%` }} />
+                      </div>
+                      <span className="text-amber-400 text-sm font-medium">{drawnCount}/{totalCount}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Spin display */}
+                {currentWinner && (
+                  <div className={`text-center mb-6 sm:mb-8 p-6 sm:p-10 rounded-2xl border transition-all duration-500 ${
+                    spinning ? "glass border-white/10" : "bg-gradient-to-br from-amber-500/20 via-orange-500/15 to-amber-500/20 border-amber-500/30 animate-winner-glow"
+                  }`}>
+                    {!spinning && currentPrizeName && (
+                      <p className="text-amber-400/80 text-sm font-medium mb-2 animate-fade-in">{currentPrizeName}</p>
+                    )}
+                    <p className={`text-3xl sm:text-5xl font-bold mb-3 transition-all duration-300 ${spinning ? "text-white/80" : "text-amber-400"}`}>
+                      {spinning ? (
+                        <span>{currentWinner.displayName || currentWinner.data?.fullName}</span>
+                      ) : (
+                        <span className="animate-fade-in-up inline-block">🏆 {currentWinner.displayName || currentWinner.data?.fullName}</span>
+                      )}
+                    </p>
+                    {!spinning && currentWinner.data && (
+                      <div className="text-slate-300 animate-fade-in-up text-sm sm:text-base">
+                        {Object.entries(currentWinner.data).map(([key, val]) => (
+                          <span key={key} className="mx-2">{String(val)}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Draw button */}
+                <div className="text-center mb-8">
+                  <button
+                    onClick={() => handleDrawPrize(currentPrize.id, currentPrize.name)}
+                    disabled={spinning}
+                    className="btn-primary !py-4 !px-10 text-lg disabled:opacity-50"
+                  >
+                    {spinning ? "Đang quay..." : `🎲 Quay lượt ${drawnCount + 1}/${totalCount}`}
+                  </button>
+                </div>
+
+                {/* Winners already drawn in this round */}
+                {drawnCount > 0 && (
+                  <div className="card mb-6">
+                    <h4 className="text-sm font-medium text-slate-400 mb-3">Người đã trúng {currentPrize.name}:</h4>
+                    <div className="space-y-2">
+                      {participants.filter((p) => p.isWinner && p.prizeId === currentPrize.id).map((w, i) => (
+                        <div key={w.id} className="flex items-center gap-3 py-2 px-3 rounded-xl bg-white/5">
+                          <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-sm font-bold text-slate-900 flex-shrink-0">{i + 1}</div>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-sm truncate">{w.displayName}</p>
+                            <p className="text-xs text-slate-400 truncate">
+                              {Object.values(w.data || {}).map((v) => String(v)).join(" · ")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* Completed rounds summary */}
+            {completedPrizes.length > 0 && !allDone && (
+              <div className="mt-6 space-y-3">
+                <h4 className="text-xs font-medium text-slate-500 uppercase tracking-wider">Đã quay xong</h4>
+                {completedPrizes.map((prize: any) => (
+                  <div key={prize.id} className="flex items-center gap-3 p-3 rounded-xl glass opacity-60">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center text-sm font-bold text-emerald-400 flex-shrink-0">✓</div>
+                    <span className="text-sm">{prize.name}</span>
+                    <span className="text-xs text-slate-500 ml-auto">{prize.winnerIds?.length || 0} người trúng</span>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        )}
+          );
+        })()}
 
         {/* ===== RESULTS VIEW ===== */}
         {view === "results" && (
