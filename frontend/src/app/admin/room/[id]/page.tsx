@@ -555,11 +555,11 @@ export default function RoomDetailPage() {
                 )}
 
                 {/* Draw button */}
-                {currentPrize && (
+                {currentPrize && !roundTransitioning && (
                 <div className="text-center mb-8">
                   <button
                     onClick={() => handleDrawPrize(currentPrize.id, currentPrize.name)}
-                    disabled={spinning || roundTransitioning}
+                    disabled={spinning}
                     className="btn-primary !py-4 !px-10 text-lg disabled:opacity-50"
                   >
                     {spinning ? "Đang quay..." : `🎲 Quay lượt ${drawnCount + 1}/${totalCount}`}
