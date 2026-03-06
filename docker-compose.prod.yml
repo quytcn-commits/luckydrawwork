@@ -1,0 +1,70 @@
+version: "3.9"
+
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: luckydraw_frontend
+    restart: always
+    environment:
+      - NEXT_PUBLIC_API_URL=https://luckydraw.work
+      - NEXT_PUBLIC_WS_URL=wss://luckydraw.work
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: luckydraw_backend
+    restart: always
+    environment:
+      - DATABASE_URL=postgresql://admin:${DB_PASSWORD}@postgres:5432/luckydraw
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=4000
+      - CORS_ORIGIN=https://luckydraw.work
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    volumes:
+      - ./storage:/app/storage
+
+  postgres:
+    image: postgres:15
+    container_name: luckydraw_db
+    restart: always
+    environment:
+      POSTGRES_DB: luckydraw
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d luckydraw"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    container_name: luckydraw_redis
+    restart: always
+
+  nginx:
+    image: nginx:alpine
+    container_name: luckydraw_nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf
+      - ./docker/ssl:/etc/nginx/ssl
+    depends_on:
+      - frontend
+      - backend
+
+volumes:
+  pgdata:
