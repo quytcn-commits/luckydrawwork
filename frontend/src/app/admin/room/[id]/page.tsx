@@ -109,10 +109,10 @@ export default function RoomDetailPage() {
           ),
         }));
 
-        // Mark participant as winner
+        // Mark participant as winner with prizeId
         setParticipants((prev) =>
           prev.map((p) =>
-            p.id === result.winner.id ? { ...p, isWinner: true } : p
+            p.id === result.winner.id ? { ...p, isWinner: true, prizeId } : p
           )
         );
       }, 3000);

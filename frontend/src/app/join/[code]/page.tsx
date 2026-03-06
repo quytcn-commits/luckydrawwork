@@ -230,18 +230,30 @@ export default function JoinPage() {
                       <option key={opt} value={opt}>{opt}</option>
                     ))}
                   </select>
-                ) : (
+                ) : (() => {
+                  const isLastFourId = field.name === "lastFourId" || field.name.toLowerCase().includes("cccd");
+                  return (
                   <input
                     type={field.type === "phone" ? "tel" : field.type === "number" ? "text" : field.type}
-                    inputMode={field.type === "number" || field.type === "phone" ? "numeric" : undefined}
+                    inputMode={field.type === "number" || field.type === "phone" || isLastFourId ? "numeric" : undefined}
                     required={field.required}
                     value={formData[field.name] || ""}
-                    onChange={(e) => setFormData({ ...formData, [field.name]: e.target.value })}
+                    onChange={(e) => {
+                      let val = e.target.value;
+                      if (isLastFourId) {
+                        val = val.replace(/\D/g, "").slice(0, 4);
+                      }
+                      setFormData({ ...formData, [field.name]: val });
+                    }}
+                    pattern={isLastFourId ? "\\d{4}" : undefined}
+                    maxLength={isLastFourId ? 4 : undefined}
+                    title={isLastFourId ? "Vui lòng nhập đúng 4 số cuối CCCD" : undefined}
                     className="input-field"
-                    placeholder={field.label}
+                    placeholder={isLastFourId ? "Nhập 4 số cuối CCCD" : field.label}
                     autoComplete="off"
                   />
-                )}
+                  );
+                })()}
               </div>
             ))}
           </div>

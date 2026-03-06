@@ -31,6 +31,12 @@ export class ParticipantsService {
         if (field.required && !data[field.name]) {
           throw new BadRequestException(`${field.label} is required`);
         }
+        // Validate 4-digit CCCD
+        if ((field.name === 'lastFourId' || field.name.toLowerCase().includes('cccd')) && data[field.name]) {
+          if (!/^\d{4}$/.test(String(data[field.name]))) {
+            throw new BadRequestException('Vui lòng nhập đúng 4 số cuối CCCD (chỉ số, đúng 4 ký tự)');
+          }
+        }
       }
     }
 
