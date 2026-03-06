@@ -34,6 +34,7 @@ export default function RoomDetailPage() {
   const [spinning, setSpinning] = useState(false);
   const [currentWinner, setCurrentWinner] = useState<any>(null);
   const [currentPrizeName, setCurrentPrizeName] = useState("");
+  const [completedRoundPrize, setCompletedRoundPrize] = useState<any>(null);
   const [error, setError] = useState("");
   const [view, setView] = useState<ViewType>("participants");
   const [uploading, setUploading] = useState(false);
@@ -100,12 +101,11 @@ export default function RoomDetailPage() {
         setSpinning(false);
 
         // Update prize state with partial draw progress
+        const updatedPrize = { drawn: result.prize.drawn, winnerIds: result.prize.winnerIds };
         setRoom((prev: any) => ({
           ...prev,
           prizes: prev.prizes.map((p: any) =>
-            p.id === prizeId
-              ? { ...p, drawn: result.prize.drawn, winnerIds: result.prize.winnerIds }
-              : p
+            p.id === prizeId ? { ...p, ...updatedPrize } : p
           ),
         }));
 
@@ -115,6 +115,14 @@ export default function RoomDetailPage() {
             p.id === result.winner.id ? { ...p, isWinner: true, prizeId } : p
           )
         );
+
+        // Show round transition if prize is fully drawn
+        if (result.prize.drawn) {
+          setTimeout(() => {
+            setCompletedRoundPrize({ id: prizeId, name: prizeName });
+            setCurrentWinner(null);
+          }, 2000);
+        }
       }, 3000);
     } catch (err: any) {
       clearInterval(spinInterval);
@@ -445,6 +453,39 @@ export default function RoomDetailPage() {
                 <p className="text-slate-400 mb-4">{room.eventName}</p>
                 <button onClick={loadResults} className="btn-primary">Xem kết quả</button>
               </div>
+            ) : completedRoundPrize ? (
+              <div className="text-center animate-fade-in-up">
+                <div className="card py-8 mb-6">
+                  <div className="text-5xl mb-4">🎊</div>
+                  <h3 className="text-2xl font-bold mb-2">Hoàn thành {completedRoundPrize.name}!</h3>
+                  <p className="text-slate-400 text-sm mb-6">Danh sách người trúng giải:</p>
+                  <div className="space-y-2 max-w-sm mx-auto mb-6">
+                    {participants.filter((p) => p.isWinner && p.prizeId === completedRoundPrize.id).map((w, i) => (
+                      <div key={w.id} className="flex items-center gap-3 py-2.5 px-4 rounded-xl bg-amber-500/10 border border-amber-500/20">
+                        <div className="w-8 h-8 rounded-full gradient-gold flex items-center justify-center text-sm font-bold text-slate-900 flex-shrink-0">{i + 1}</div>
+                        <div className="min-w-0 text-left">
+                          <p className="font-semibold text-sm text-amber-400 truncate">{w.displayName}</p>
+                          <p className="text-xs text-slate-400 truncate">
+                            {Object.values(w.data || {}).map((v) => String(v)).join(" · ")}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {currentPrize ? (
+                  <button
+                    onClick={() => { setCompletedRoundPrize(null); setCurrentWinner(null); }}
+                    className="btn-primary !py-4 !px-10 text-lg animate-pulse"
+                  >
+                    ▶ Bắt đầu quay {currentPrize.name}
+                  </button>
+                ) : (
+                  <button onClick={loadResults} className="btn-primary !py-4 !px-10 text-lg">
+                    Xem kết quả
+                  </button>
+                )}
+              </div>
             ) : (
               <>
                 {/* Current prize header */}
@@ -685,6 +726,7 @@ export default function RoomDetailPage() {
                     setParticipants(updated.participants || []);
                     setDrawResults([]);
                     setCurrentWinner(null);
+                    setCompletedRoundPrize(null);
                   } catch (err: any) { setError(err.message); }
                 }}
                 className="px-4 py-2 rounded-xl bg-red-500/15 text-red-400 text-sm hover:bg-red-500/25 transition-colors border border-red-500/20"
