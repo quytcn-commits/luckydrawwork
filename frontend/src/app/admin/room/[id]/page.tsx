@@ -116,12 +116,19 @@ export default function RoomDetailPage() {
           )
         );
 
-        // Show round transition if prize is fully drawn
+        // Show round transition if prize is fully drawn (but NOT the last prize — let admin manually proceed)
         if (result.prize.drawn) {
-          setTimeout(() => {
-            setCompletedRoundPrize({ id: prizeId, name: prizeName });
-            setCurrentWinner(null);
-          }, 1200);
+          // Check if there are still undrawn prizes left
+          const hasMorePrizes = room.prizes.some((p: any) =>
+            p.id !== prizeId && !(p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1))
+          );
+          if (hasMorePrizes) {
+            setTimeout(() => {
+              setCompletedRoundPrize({ id: prizeId, name: prizeName });
+              setCurrentWinner(null);
+            }, 3000);
+          }
+          // Last prize: keep winner displayed, admin clicks button to see results
         }
       }, 2500);
     } catch (err: any) {
@@ -479,7 +486,7 @@ export default function RoomDetailPage() {
                   </button>
                 )}
               </div>
-            ) : allDone ? (
+            ) : (allDone && !currentWinner) ? (
               <div className="text-center card py-10">
                 <div className="text-6xl mb-4">🎉</div>
                 <h3 className="text-2xl font-bold mb-2">Đã quay xong tất cả giải!</h3>
@@ -489,6 +496,7 @@ export default function RoomDetailPage() {
             ) : (
               <>
                 {/* Current prize header */}
+                {currentPrize && (
                 <div className="text-center mb-6 sm:mb-8">
                   <p className="text-indigo-400 text-sm font-medium mb-1">
                     Vòng {completedPrizes.length + 1}/{sortedPrizes.length}
@@ -506,6 +514,7 @@ export default function RoomDetailPage() {
                     </div>
                   )}
                 </div>
+                )}
 
                 {/* Spin display */}
                 {currentWinner && (
@@ -532,7 +541,20 @@ export default function RoomDetailPage() {
                   </div>
                 )}
 
+                {/* Last prize done — manual button to view results */}
+                {allDone && !spinning && currentWinner && (
+                  <div className="text-center mb-8 animate-fade-in-up">
+                    <button
+                      onClick={() => { setCurrentWinner(null); loadResults(); }}
+                      className="btn-primary !py-4 !px-10 text-lg"
+                    >
+                      🏆 Xem tổng kết quả
+                    </button>
+                  </div>
+                )}
+
                 {/* Draw button */}
+                {currentPrize && (
                 <div className="text-center mb-8">
                   <button
                     onClick={() => handleDrawPrize(currentPrize.id, currentPrize.name)}
@@ -542,9 +564,10 @@ export default function RoomDetailPage() {
                     {spinning ? "Đang quay..." : `🎲 Quay lượt ${drawnCount + 1}/${totalCount}`}
                   </button>
                 </div>
+                )}
 
                 {/* Winners already drawn in this round */}
-                {drawnCount > 0 && (
+                {currentPrize && drawnCount > 0 && (
                   <div className="card mb-6">
                     <h4 className="text-sm font-medium text-slate-400 mb-3">Người đã trúng {currentPrize.name}:</h4>
                     <div className="space-y-2">
