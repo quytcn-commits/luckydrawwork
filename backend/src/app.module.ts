@@ -20,7 +20,7 @@ import { UploadsModule } from './uploads/uploads.module';
       synchronize: true,
     }),
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'storage'),
+      rootPath: join(__dirname, '..', 'storage', 'uploads'),
       serveRoot: '/uploads',
       serveStaticOptions: { index: false },
     }),
