@@ -32,9 +32,9 @@ export class RoomsService {
       description: dto.description,
       createdBy: dto.createdBy || 'Admin',
       formFields: dto.formFields || [
-        { name: 'fullName', label: 'Họ và tên', type: 'text', required: true, unique: false },
-        { name: 'agency', label: 'Đại lý', type: 'text', required: true, unique: false },
-        { name: 'lastFourId', label: '4 số cuối CCCD', type: 'text', required: true, unique: true },
+        { name: 'fullName', label: 'Họ và tên', type: 'text', required: true },
+        { name: 'agency', label: 'Đại lý', type: 'text', required: true },
+        { name: 'lastFourId', label: '4 số cuối CCCD', type: 'text', required: true },
       ],
       theme: dto.theme || null,
       logoUrl: dto.logoUrl,

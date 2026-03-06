@@ -40,25 +40,24 @@ export class ParticipantsService {
       }
     }
 
-    // Validate unique fields via DB query (not in-memory)
-    if (room.formFields) {
-      for (const field of room.formFields) {
-        if (field.unique && data[field.name]) {
-          const duplicate = await this.participantRepo
-            .createQueryBuilder('p')
-            .where('p.roomId = :roomId', { roomId: room.id })
-            .andWhere("p.data ->> :fieldName = :value", {
-              fieldName: field.name,
-              value: String(data[field.name]),
-            })
-            .getOne();
+    // Check duplicate: reject if ALL fields match an existing participant
+    if (room.formFields && room.formFields.length > 0) {
+      const qb = this.participantRepo
+        .createQueryBuilder('p')
+        .where('p.roomId = :roomId', { roomId: room.id });
 
-          if (duplicate) {
-            throw new BadRequestException(
-              `${field.label} "${data[field.name]}" đã được đăng ký`,
-            );
-          }
+      for (const field of room.formFields) {
+        if (data[field.name] !== undefined && data[field.name] !== '') {
+          qb.andWhere(`p.data ->> :field_${field.name} = :val_${field.name}`, {
+            [`field_${field.name}`]: field.name,
+            [`val_${field.name}`]: String(data[field.name]),
+          });
         }
+      }
+
+      const duplicate = await qb.getOne();
+      if (duplicate) {
+        throw new BadRequestException('Thông tin này đã được đăng ký');
       }
     }
 
