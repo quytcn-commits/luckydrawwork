@@ -49,6 +49,18 @@ export class AuthService {
     };
   }
 
+  async changePassword(id: string, currentPassword: string, newPassword: string) {
+    const admin = await this.adminRepo.findOne({ where: { id } });
+    if (!admin) throw new UnauthorizedException();
+
+    const valid = await bcrypt.compare(currentPassword, admin.password);
+    if (!valid) throw new UnauthorizedException('Mật khẩu hiện tại không đúng');
+
+    admin.password = await bcrypt.hash(newPassword, 10);
+    await this.adminRepo.save(admin);
+    return { message: 'Đổi mật khẩu thành công' };
+  }
+
   async seedAdmin() {
     const count = await this.adminRepo.count();
     if (count === 0) {

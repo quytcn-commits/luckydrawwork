@@ -27,6 +27,8 @@ export const api = {
   register: (email: string, password: string, name: string) =>
     request('/auth/register', { method: 'POST', body: JSON.stringify({ email, password, name }) }),
   getProfile: () => request('/auth/profile'),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request('/auth/change-password', { method: 'POST', body: JSON.stringify({ currentPassword, newPassword }) }),
 
   // Rooms
   createRoom: (data: any) =>

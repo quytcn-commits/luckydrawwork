@@ -23,6 +23,15 @@ class LoginDto {
   password: string;
 }
 
+class ChangePasswordDto {
+  @IsString()
+  currentPassword: string;
+
+  @IsString()
+  @MinLength(6)
+  newPassword: string;
+}
+
 @Controller('auth')
 export class AuthController implements OnModuleInit {
   constructor(private authService: AuthService) {}
@@ -45,5 +54,11 @@ export class AuthController implements OnModuleInit {
   @UseGuards(AuthGuard('jwt'))
   getProfile(@Request() req) {
     return this.authService.getProfile(req.user.sub);
+  }
+
+  @Post('change-password')
+  @UseGuards(AuthGuard('jwt'))
+  changePassword(@Request() req, @Body() dto: ChangePasswordDto) {
+    return this.authService.changePassword(req.user.sub, dto.currentPassword, dto.newPassword);
   }
 }

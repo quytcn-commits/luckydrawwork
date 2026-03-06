@@ -27,6 +27,13 @@ export default function AdminPage() {
   const [showCreate, setShowCreate] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [pwMsg, setPwMsg] = useState("");
+  const [pwError, setPwError] = useState("");
+
   const [eventName, setEventName] = useState("");
   const [roomName, setRoomName] = useState("");
   const [description, setDescription] = useState("");
@@ -92,6 +99,26 @@ export default function AdminPage() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setPwError("");
+    setPwMsg("");
+    if (newPassword !== confirmPassword) {
+      setPwError("Mật khẩu mới không khớp");
+      return;
+    }
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setPwMsg("Đổi mật khẩu thành công!");
+      setCurrentPassword("");
+      setNewPassword("");
+      setConfirmPassword("");
+      setTimeout(() => setShowChangePassword(false), 1500);
+    } catch (err: any) {
+      setPwError(err.message);
     }
   }
 
@@ -193,6 +220,14 @@ export default function AdminPage() {
             >
               <span className="sm:hidden">+ Tạo</span>
               <span className="hidden sm:inline">+ Tạo phòng mới</span>
+            </button>
+            <button
+              onClick={() => { setShowChangePassword(true); setPwMsg(""); setPwError(""); }}
+              className="px-3 sm:px-4 py-2 rounded-xl bg-white/5 text-sm hover:bg-white/10 transition-colors text-slate-400"
+              title="Đổi mật khẩu"
+            >
+              <span className="sm:hidden">🔑</span>
+              <span className="hidden sm:inline">Đổi mật khẩu</span>
             </button>
             <button
               onClick={() => {
@@ -350,6 +385,89 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
+                  className="btn-secondary px-6"
+                >
+                  Huỷ
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
+        {/* Change Password Modal */}
+        {showChangePassword && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fade-in">
+            <form
+              onSubmit={handleChangePassword}
+              className="bg-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl p-5 sm:p-6 w-full max-w-md animate-scale-in shadow-2xl"
+            >
+              <div className="flex items-center justify-between mb-5">
+                <h2 className="text-xl font-bold">Đổi mật khẩu</h2>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(false)}
+                  className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 flex items-center justify-center text-slate-400 transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {pwError && (
+                <div className="bg-red-500/15 text-red-400 px-4 py-3 rounded-xl mb-4 text-sm border border-red-500/20">
+                  {pwError}
+                </div>
+              )}
+              {pwMsg && (
+                <div className="bg-emerald-500/15 text-emerald-400 px-4 py-3 rounded-xl mb-4 text-sm border border-emerald-500/20">
+                  {pwMsg}
+                </div>
+              )}
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1.5 font-medium">Mật khẩu hiện tại</label>
+                  <input
+                    type="password"
+                    required
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="••••••••"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1.5 font-medium">Mật khẩu mới</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="Tối thiểu 6 ký tự"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-slate-400 mb-1.5 font-medium">Xác nhận mật khẩu mới</label>
+                  <input
+                    type="password"
+                    required
+                    minLength={6}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    className="input-field"
+                    placeholder="Nhập lại mật khẩu mới"
+                  />
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <button type="submit" className="btn-primary flex-1">
+                  Đổi mật khẩu
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowChangePassword(false)}
                   className="btn-secondary px-6"
                 >
                   Huỷ
