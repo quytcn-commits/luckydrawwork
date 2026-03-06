@@ -44,6 +44,12 @@ export class RoomsController {
     return this.roomsService.closeRegistration(id);
   }
 
+  @Patch(':id/open')
+  @UseGuards(AuthGuard('jwt'))
+  openRegistration(@Param('id') id: string) {
+    return this.roomsService.openRegistration(id);
+  }
+
   @Patch(':id/start-draw')
   @UseGuards(AuthGuard('jwt'))
   startDraw(@Param('id') id: string) {

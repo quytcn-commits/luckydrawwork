@@ -38,6 +38,8 @@ export const api = {
   getPublicRoom: (code: string) => request(`/rooms/join/${code}`),
   closeRegistration: (id: string) =>
     request(`/rooms/${id}/close`, { method: 'PATCH' }),
+  openRegistration: (id: string) =>
+    request(`/rooms/${id}/open`, { method: 'PATCH' }),
   startDraw: (id: string) =>
     request(`/rooms/${id}/start-draw`, { method: 'PATCH' }),
   updateRoom: (id: string, data: any) =>

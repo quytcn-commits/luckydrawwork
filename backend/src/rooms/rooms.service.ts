@@ -95,6 +95,10 @@ export class RoomsService {
     return this.updateStatus(id, RoomStatus.CLOSED);
   }
 
+  async openRegistration(id: string) {
+    return this.updateStatus(id, RoomStatus.OPEN);
+  }
+
   async startDraw(id: string) {
     return this.updateStatus(id, RoomStatus.DRAWING);
   }

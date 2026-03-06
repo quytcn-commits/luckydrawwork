@@ -64,12 +64,19 @@ export default function RoomDetailPage() {
     return () => { socket.off("participantJoined"); };
   }, [room?.code]);
 
-  async function handleCloseRegistration() {
-    if (!confirm("Bạn có chắc muốn đóng đăng ký?")) return;
-    try {
-      const updated = await api.closeRegistration(roomId);
-      setRoom(updated);
-    } catch (err: any) { setError(err.message); }
+  async function handleToggleRegistration() {
+    if (room.status === "open") {
+      if (!confirm("Bạn có chắc muốn đóng đăng ký?")) return;
+      try {
+        const updated = await api.closeRegistration(roomId);
+        setRoom(updated);
+      } catch (err: any) { setError(err.message); }
+    } else {
+      try {
+        const updated = await api.openRegistration(roomId);
+        setRoom(updated);
+      } catch (err: any) { setError(err.message); }
+    }
   }
 
   async function handleStartDraw() {
@@ -269,19 +276,19 @@ export default function RoomDetailPage() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
-            {room.status === "open" && (
-              <button onClick={handleCloseRegistration}
-                className="px-2.5 sm:px-4 py-2 rounded-xl bg-amber-500/15 text-amber-400 text-xs sm:text-sm hover:bg-amber-500/25 transition-colors border border-amber-500/20">
-                <span className="hidden sm:inline">Đóng đăng ký</span>
-                <span className="sm:hidden">Đóng</span>
-              </button>
-            )}
-            {(room.status === "closed" || room.status === "open") && (
-              <button onClick={handleStartDraw} className="btn-primary text-xs sm:text-sm !px-3 sm:!px-5 !py-2">
-                <span className="hidden sm:inline">Bắt đầu quay</span>
-                <span className="sm:hidden">Quay</span>
-              </button>
-            )}
+            <button onClick={handleToggleRegistration}
+              className={`px-2.5 sm:px-4 py-2 rounded-xl text-xs sm:text-sm transition-colors border ${
+                room.status === "open"
+                  ? "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 border-amber-500/20"
+                  : "bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 border-emerald-500/20"
+              }`}>
+              <span className="hidden sm:inline">{room.status === "open" ? "Đóng đăng ký" : "Mở đăng ký"}</span>
+              <span className="sm:hidden">{room.status === "open" ? "Đóng" : "Mở"}</span>
+            </button>
+            <button onClick={handleStartDraw} className="btn-primary text-xs sm:text-sm !px-3 sm:!px-5 !py-2">
+              <span className="hidden sm:inline">Bắt đầu quay</span>
+              <span className="sm:hidden">Quay</span>
+            </button>
           </div>
         </div>
       </header>
