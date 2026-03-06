@@ -5,10 +5,12 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Room } from '../rooms/room.entity';
 
 @Entity('participants')
+@Index(['roomId', 'isWinner'])
 export class Participant {
   @PrimaryGeneratedColumn('uuid')
   id: string;

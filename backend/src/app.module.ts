@@ -17,7 +17,13 @@ import { UploadsModule } from './uploads/uploads.module';
       type: 'postgres',
       url: process.env.DATABASE_URL || 'postgresql://admin:admin@localhost:5432/luckydraw',
       autoLoadEntities: true,
-      synchronize: true,
+      synchronize: process.env.NODE_ENV !== 'production',
+      extra: {
+        max: 30,
+        min: 5,
+        idleTimeoutMillis: 30000,
+        connectionTimeoutMillis: 5000,
+      },
     }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'storage', 'uploads'),

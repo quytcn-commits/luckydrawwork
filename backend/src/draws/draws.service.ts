@@ -1,6 +1,6 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Prize } from './prize.entity';
 import { Participant } from '../participants/participant.entity';
 import { Room, RoomStatus } from '../rooms/room.entity';
@@ -23,7 +23,12 @@ export class DrawsService {
 
     const prize = await this.prizeRepo.findOne({ where: { id: prizeId, roomId } });
     if (!prize) throw new NotFoundException('Prize not found');
-    if (prize.drawn) throw new BadRequestException('Prize already drawn');
+    if (prize.drawn) throw new BadRequestException('Prize already fully drawn');
+
+    const currentWinnerIds = prize.winnerIds || [];
+    if (currentWinnerIds.length >= prize.winnerCount) {
+      throw new BadRequestException('Prize already fully drawn');
+    }
 
     // Get eligible participants (not yet winners)
     const eligible = await this.participantRepo.find({
@@ -34,48 +39,50 @@ export class DrawsService {
       throw new BadRequestException('No eligible participants');
     }
 
-    const winnersNeeded = Math.min(prize.winnerCount, eligible.length);
-    const winners: Participant[] = [];
+    // Cryptographically secure random selection - pick exactly 1 winner
+    const randomBytes = crypto.randomBytes(4);
+    const randomIndex = randomBytes.readUInt32BE(0) % eligible.length;
+    const winner = eligible[randomIndex];
 
-    // Cryptographically secure random selection
-    const pool = [...eligible];
-    for (let i = 0; i < winnersNeeded; i++) {
-      const randomBytes = crypto.randomBytes(4);
-      const randomIndex = randomBytes.readUInt32BE(0) % pool.length;
-      const winner = pool.splice(randomIndex, 1)[0];
-      winners.push(winner);
-    }
+    // Update winner
+    await this.participantRepo.update(winner.id, {
+      isWinner: true,
+      prizeId: prize.id,
+    });
 
-    // Update winners
-    for (const winner of winners) {
-      await this.participantRepo.update(winner.id, {
-        isWinner: true,
-        prizeId: prize.id,
-      });
-    }
+    // Update prize - append to winnerIds
+    const updatedWinnerIds = [...currentWinnerIds, winner.id];
+    const isFullyDrawn = updatedWinnerIds.length >= prize.winnerCount;
 
-    // Update prize
     await this.prizeRepo.update(prize.id, {
-      drawn: true,
-      winnerIds: winners.map((w) => w.id),
-      winnerId: winners[0]?.id,
+      winnerIds: updatedWinnerIds,
+      winnerId: updatedWinnerIds[0],
+      drawn: isFullyDrawn,
     });
 
-    // Check if all prizes drawn
-    const undrawnCount = await this.prizeRepo.count({
-      where: { roomId, drawn: false },
-    });
-    if (undrawnCount === 0) {
-      await this.roomRepo.update(roomId, { status: RoomStatus.FINISHED });
+    // Check if all prizes fully drawn
+    if (isFullyDrawn) {
+      const undrawnCount = await this.prizeRepo.count({
+        where: { roomId, drawn: false },
+      });
+      if (undrawnCount === 0) {
+        await this.roomRepo.update(roomId, { status: RoomStatus.FINISHED });
+      }
     }
 
     return {
-      prize: { ...prize, drawn: true },
-      winners: winners.map((w) => ({
-        id: w.id,
-        displayName: w.displayName,
-        data: w.data,
-      })),
+      prize: {
+        ...prize,
+        winnerIds: updatedWinnerIds,
+        drawn: isFullyDrawn,
+      },
+      winner: {
+        id: winner.id,
+        displayName: winner.displayName,
+        data: winner.data,
+      },
+      drawnCount: updatedWinnerIds.length,
+      totalCount: prize.winnerCount,
     };
   }
 
@@ -85,24 +92,35 @@ export class DrawsService {
       order: { order: 'ASC' },
     });
 
-    const results: any[] = [];
+    // Collect all winner IDs across all prizes
+    const allWinnerIds: string[] = [];
     for (const prize of prizes) {
-      let winners: Participant[] = [];
       if (prize.winnerIds && prize.winnerIds.length > 0) {
-        winners = await this.participantRepo.find({
-          where: prize.winnerIds.map((id) => ({ id })),
-        });
+        allWinnerIds.push(...prize.winnerIds);
       }
-      results.push({
-        prize: { id: prize.id, name: prize.name, order: prize.order, imageUrl: prize.imageUrl },
-        winners: winners.map((w) => ({
-          id: w.id,
-          displayName: w.displayName,
-          data: w.data,
-        })),
-      });
     }
 
-    return results;
+    // Single query to fetch all winners
+    let winnersMap = new Map<string, Participant>();
+    if (allWinnerIds.length > 0) {
+      const allWinners = await this.participantRepo.find({
+        where: { id: In(allWinnerIds) },
+      });
+      for (const w of allWinners) {
+        winnersMap.set(w.id, w);
+      }
+    }
+
+    return prizes.map((prize) => ({
+      prize: { id: prize.id, name: prize.name, order: prize.order, imageUrl: prize.imageUrl, winnerCount: prize.winnerCount, drawn: prize.drawn },
+      winners: (prize.winnerIds || [])
+        .map((id) => winnersMap.get(id))
+        .filter(Boolean)
+        .map((w) => ({
+          id: w!.id,
+          displayName: w!.displayName,
+          data: w!.data,
+        })),
+    }));
   }
 }

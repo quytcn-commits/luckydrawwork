@@ -96,18 +96,23 @@ export default function RoomDetailPage() {
       const result = await api.drawPrize(roomId, prizeId);
       setTimeout(() => {
         clearInterval(spinInterval);
-        setCurrentWinner(result.winners[0]);
+        setCurrentWinner(result.winner);
         setSpinning(false);
-        setDrawResults((prev) => [...prev, result]);
+
+        // Update prize state with partial draw progress
         setRoom((prev: any) => ({
           ...prev,
           prizes: prev.prizes.map((p: any) =>
-            p.id === prizeId ? { ...p, drawn: true } : p
+            p.id === prizeId
+              ? { ...p, drawn: result.prize.drawn, winnerIds: result.prize.winnerIds }
+              : p
           ),
         }));
+
+        // Mark participant as winner
         setParticipants((prev) =>
           prev.map((p) =>
-            result.winners.some((w: any) => w.id === p.id) ? { ...p, isWinner: true } : p
+            p.id === result.winner.id ? { ...p, isWinner: true } : p
           )
         );
       }, 3000);
@@ -439,33 +444,50 @@ export default function RoomDetailPage() {
             )}
 
             <div className="space-y-3">
-              {sortedPrizes.map((prize: any, index: number) => (
-                <div key={prize.id}
-                  className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
-                    prize.drawn ? "glass opacity-60" : "glass hover:bg-white/10"
-                  }`}>
-                  <div className="flex items-center gap-3 mb-3 sm:mb-0">
-                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold flex-shrink-0 ${
-                      prize.drawn ? "bg-emerald-500/20 text-emerald-400" : index === 0 ? "bg-amber-500/20 text-amber-400" : "bg-indigo-500/20 text-indigo-400"
-                    }`}>{prize.drawn ? "✓" : prize.order}</div>
-                    <div>
-                      <h3 className="font-semibold text-base sm:text-lg">{prize.name}</h3>
-                      <p className="text-xs sm:text-sm text-slate-400">{prize.winnerCount} người trúng · Thứ tự: {prize.order}</p>
+              {sortedPrizes.map((prize: any, index: number) => {
+                const drawnCount = prize.winnerIds?.length || 0;
+                const totalCount = prize.winnerCount || 1;
+                const isFullyDrawn = prize.drawn || drawnCount >= totalCount;
+                const isPartiallyDrawn = drawnCount > 0 && !isFullyDrawn;
+
+                return (
+                  <div key={prize.id}
+                    className={`flex flex-col sm:flex-row items-start sm:items-center justify-between p-4 sm:p-5 rounded-2xl border transition-all duration-300 ${
+                      isFullyDrawn ? "glass opacity-60" : isPartiallyDrawn ? "glass border-amber-500/30" : "glass hover:bg-white/10"
+                    }`}>
+                    <div className="flex items-center gap-3 mb-3 sm:mb-0">
+                      <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center text-lg sm:text-xl font-bold flex-shrink-0 ${
+                        isFullyDrawn ? "bg-emerald-500/20 text-emerald-400" : isPartiallyDrawn ? "bg-amber-500/20 text-amber-400" : index === 0 ? "bg-amber-500/20 text-amber-400" : "bg-indigo-500/20 text-indigo-400"
+                      }`}>{isFullyDrawn ? "✓" : prize.order}</div>
+                      <div>
+                        <h3 className="font-semibold text-base sm:text-lg">{prize.name}</h3>
+                        <p className="text-xs sm:text-sm text-slate-400">
+                          {totalCount} người trúng · Thứ tự: {prize.order}
+                          {drawnCount > 0 && !isFullyDrawn && (
+                            <span className="text-amber-400 ml-2">· Đã quay {drawnCount}/{totalCount}</span>
+                          )}
+                        </p>
+                        {isPartiallyDrawn && (
+                          <div className="mt-1.5 w-32 h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div className="h-full bg-amber-400 rounded-full transition-all" style={{ width: `${(drawnCount / totalCount) * 100}%` }} />
+                          </div>
+                        )}
+                      </div>
                     </div>
+                    {isFullyDrawn ? (
+                      <span className="btn-success !py-2 text-xs sm:text-sm w-full sm:w-auto text-center">✓ Đã quay xong</span>
+                    ) : (
+                      <button onClick={() => handleDrawPrize(prize.id, prize.name)} disabled={spinning}
+                        className="btn-primary !py-2.5 text-sm w-full sm:w-auto disabled:opacity-50">
+                        {spinning ? "Đang quay..." : `🎲 Quay giải này (${drawnCount + 1}/${totalCount})`}
+                      </button>
+                    )}
                   </div>
-                  {prize.drawn ? (
-                    <span className="btn-success !py-2 text-xs sm:text-sm w-full sm:w-auto text-center">✓ Đã quay xong</span>
-                  ) : (
-                    <button onClick={() => handleDrawPrize(prize.id, prize.name)} disabled={spinning}
-                      className="btn-primary !py-2.5 text-sm w-full sm:w-auto disabled:opacity-50">
-                      {spinning ? "Đang quay..." : "🎲 Quay giải này"}
-                    </button>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
 
-            {sortedPrizes.every((p: any) => p.drawn) && (
+            {sortedPrizes.every((p: any) => p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1)) && (
               <div className="text-center mt-8 card py-8">
                 <div className="text-5xl mb-4">🎉</div>
                 <h3 className="text-xl font-bold mb-2">Đã quay xong tất cả giải!</h3>

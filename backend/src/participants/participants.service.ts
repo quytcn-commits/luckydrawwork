@@ -18,29 +18,40 @@ export class ParticipantsService {
   async register(roomCode: string, data: Record<string, any>) {
     const room = await this.roomRepo.findOne({
       where: { code: roomCode },
-      relations: ['participants'],
     });
 
     if (!room) throw new NotFoundException('Room not found');
     if (room.status !== RoomStatus.OPEN) {
-      throw new BadRequestException('Registration is closed');
+      throw new BadRequestException('Đăng ký đã đóng');
     }
 
-    // Validate unique fields
+    // Validate required fields
+    if (room.formFields) {
+      for (const field of room.formFields) {
+        if (field.required && !data[field.name]) {
+          throw new BadRequestException(`${field.label} is required`);
+        }
+      }
+    }
+
+    // Validate unique fields via DB query (not in-memory)
     if (room.formFields) {
       for (const field of room.formFields) {
         if (field.unique && data[field.name]) {
-          const duplicate = room.participants.find(
-            (p) => p.data[field.name] === data[field.name],
-          );
+          const duplicate = await this.participantRepo
+            .createQueryBuilder('p')
+            .where('p.roomId = :roomId', { roomId: room.id })
+            .andWhere("p.data ->> :fieldName = :value", {
+              fieldName: field.name,
+              value: String(data[field.name]),
+            })
+            .getOne();
+
           if (duplicate) {
             throw new BadRequestException(
-              `${field.label} "${data[field.name]}" already registered`,
+              `${field.label} "${data[field.name]}" đã được đăng ký`,
             );
           }
-        }
-        if (field.required && !data[field.name]) {
-          throw new BadRequestException(`${field.label} is required`);
         }
       }
     }

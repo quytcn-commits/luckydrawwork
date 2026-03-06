@@ -3,12 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, RoomStatus } from './room.entity';
 import { Prize } from '../draws/prize.entity';
+import { Participant } from '../participants/participant.entity';
 
 @Injectable()
 export class RoomsService {
   constructor(
     @InjectRepository(Room) private roomRepo: Repository<Room>,
     @InjectRepository(Prize) private prizeRepo: Repository<Prize>,
+    @InjectRepository(Participant) private participantRepo: Repository<Participant>,
   ) {}
 
   private generateCode(): string {
@@ -55,7 +57,7 @@ export class RoomsService {
       await this.prizeRepo.save(prizes);
     }
 
-    return this.findByCode(code);
+    return this.findById(savedRoom.id);
   }
 
   async findAll(adminId: string) {
@@ -110,12 +112,18 @@ export class RoomsService {
     return this.findById(id);
   }
 
+  // Public endpoint: lightweight query, no participant loading
   async getPublicRoom(code: string) {
     const room = await this.roomRepo.findOne({
       where: { code },
-      relations: ['participants', 'prizes'],
+      relations: ['prizes'],
     });
     if (!room) throw new NotFoundException('Room not found');
+
+    const participantCount = await this.participantRepo.count({
+      where: { roomId: room.id },
+    });
+
     return {
       id: room.id,
       code: room.code,
@@ -127,7 +135,7 @@ export class RoomsService {
       theme: room.theme,
       logoUrl: room.logoUrl,
       kvImageUrl: room.kvImageUrl,
-      participantCount: room.participants?.length || 0,
+      participantCount,
       prizes: room.prizes?.sort((a, b) => a.order - b.order),
     };
   }
