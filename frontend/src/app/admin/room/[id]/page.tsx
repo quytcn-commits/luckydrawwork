@@ -121,9 +121,9 @@ export default function RoomDetailPage() {
           setTimeout(() => {
             setCompletedRoundPrize({ id: prizeId, name: prizeName });
             setCurrentWinner(null);
-          }, 2000);
+          }, 1200);
         }
-      }, 3000);
+      }, 2500);
     } catch (err: any) {
       clearInterval(spinInterval);
       setSpinning(false);
@@ -446,14 +446,7 @@ export default function RoomDetailPage() {
               })}
             </div>
 
-            {allDone ? (
-              <div className="text-center card py-10">
-                <div className="text-6xl mb-4">🎉</div>
-                <h3 className="text-2xl font-bold mb-2">Đã quay xong tất cả giải!</h3>
-                <p className="text-slate-400 mb-4">{room.eventName}</p>
-                <button onClick={loadResults} className="btn-primary">Xem kết quả</button>
-              </div>
-            ) : completedRoundPrize ? (
+            {completedRoundPrize ? (
               <div className="text-center animate-fade-in-up">
                 <div className="card py-8 mb-6">
                   <div className="text-5xl mb-4">🎊</div>
@@ -473,7 +466,7 @@ export default function RoomDetailPage() {
                     ))}
                   </div>
                 </div>
-                {currentPrize ? (
+                {currentPrize && !allDone ? (
                   <button
                     onClick={() => { setCompletedRoundPrize(null); setCurrentWinner(null); }}
                     className="btn-primary !py-4 !px-10 text-lg animate-pulse"
@@ -481,10 +474,17 @@ export default function RoomDetailPage() {
                     ▶ Bắt đầu quay {currentPrize.name}
                   </button>
                 ) : (
-                  <button onClick={loadResults} className="btn-primary !py-4 !px-10 text-lg">
-                    Xem kết quả
+                  <button onClick={() => { setCompletedRoundPrize(null); loadResults(); }} className="btn-primary !py-4 !px-10 text-lg">
+                    🏆 Xem tổng kết quả
                   </button>
                 )}
+              </div>
+            ) : allDone ? (
+              <div className="text-center card py-10">
+                <div className="text-6xl mb-4">🎉</div>
+                <h3 className="text-2xl font-bold mb-2">Đã quay xong tất cả giải!</h3>
+                <p className="text-slate-400 mb-4">{room.eventName}</p>
+                <button onClick={loadResults} className="btn-primary">Xem kết quả</button>
               </div>
             ) : (
               <>
