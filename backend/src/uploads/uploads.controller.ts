@@ -13,7 +13,7 @@ import { extname } from 'path';
 import { v4 as uuid } from 'uuid';
 
 const ALLOWED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
-const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+const MAX_SIZE = 10 * 1024 * 1024; // 10MB
 
 @Controller('uploads')
 export class UploadsController {
