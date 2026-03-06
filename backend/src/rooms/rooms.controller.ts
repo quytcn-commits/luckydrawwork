@@ -50,6 +50,12 @@ export class RoomsController {
     return this.roomsService.startDraw(id);
   }
 
+  @Patch(':id/reset')
+  @UseGuards(AuthGuard('jwt'))
+  resetRoom(@Param('id') id: string) {
+    return this.roomsService.resetRoom(id);
+  }
+
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
   update(@Param('id') id: string, @Body() dto: any) {

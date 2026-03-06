@@ -625,6 +625,29 @@ export default function RoomDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Reset room */}
+            <div className="card border-red-500/20">
+              <h3 className="font-semibold mb-2 text-red-400">Reset phòng</h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Xóa toàn bộ người tham gia và kết quả quay thưởng. Giữ nguyên mã phòng, QR, link và cấu hình giải thưởng.
+              </p>
+              <button
+                onClick={async () => {
+                  if (!confirm("⚠️ Bạn có chắc muốn RESET phòng?\n\nTất cả người tham gia và kết quả quay thưởng sẽ bị xóa.\nMã phòng, QR và cấu hình giải thưởng sẽ được giữ nguyên.")) return;
+                  try {
+                    const updated = await api.resetRoom(roomId);
+                    setRoom(updated);
+                    setParticipants(updated.participants || []);
+                    setDrawResults([]);
+                    setCurrentWinner(null);
+                  } catch (err: any) { setError(err.message); }
+                }}
+                className="px-4 py-2 rounded-xl bg-red-500/15 text-red-400 text-sm hover:bg-red-500/25 transition-colors border border-red-500/20"
+              >
+                🔄 Reset phòng
+              </button>
+            </div>
           </div>
         )}
       </main>

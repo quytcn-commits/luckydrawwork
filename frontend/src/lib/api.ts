@@ -43,6 +43,9 @@ export const api = {
   updateRoom: (id: string, data: any) =>
     request(`/rooms/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
 
+  resetRoom: (id: string) =>
+    request(`/rooms/${id}/reset`, { method: 'PATCH' }),
+
   // Participants
   registerParticipant: (roomCode: string, data: Record<string, any>) =>
     request(`/participants/${roomCode}/register`, { method: 'POST', body: JSON.stringify(data) }),
