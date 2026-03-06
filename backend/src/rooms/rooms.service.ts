@@ -132,6 +132,31 @@ export class RoomsService {
     return this.findById(id);
   }
 
+  async resetDraws(id: string) {
+    await this.findById(id); // verify exists
+
+    // Reset winner status on participants (keep them in the room)
+    await this.participantRepo
+      .createQueryBuilder()
+      .update(Participant)
+      .set({ isWinner: false, prizeId: () => 'NULL' })
+      .where('roomId = :id', { id })
+      .execute();
+
+    // Reset all prizes (clear winners, keep config)
+    await this.prizeRepo
+      .createQueryBuilder()
+      .update(Prize)
+      .set({ drawn: false, winnerId: () => 'NULL', winnerIds: () => 'NULL' })
+      .where('roomId = :id', { id })
+      .execute();
+
+    // Reset room status to drawing (participants still registered)
+    await this.roomRepo.update(id, { status: RoomStatus.DRAWING });
+
+    return this.findById(id);
+  }
+
   // Public endpoint: lightweight query, no participant loading
   async getPublicRoom(code: string) {
     const room = await this.roomRepo.findOne({

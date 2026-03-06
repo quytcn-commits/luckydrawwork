@@ -734,6 +734,31 @@ export default function RoomDetailPage() {
               </div>
             </div>
 
+            {/* Reset draws */}
+            <div className="card border-amber-500/20">
+              <h3 className="font-semibold mb-2 text-amber-400">Reset lượt quay</h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Xóa kết quả quay thưởng, giữ nguyên danh sách người tham gia. Dùng khi muốn quay lại từ đầu.
+              </p>
+              <button
+                onClick={async () => {
+                  if (!confirm("⚠️ Bạn có chắc muốn RESET lượt quay?\n\nKết quả quay thưởng sẽ bị xóa.\nDanh sách người tham gia được giữ nguyên.")) return;
+                  try {
+                    const updated = await api.resetDraws(roomId);
+                    setRoom(updated);
+                    setParticipants(updated.participants || []);
+                    setDrawResults([]);
+                    setCurrentWinner(null);
+                    setCompletedRoundPrize(null);
+                    setView("draw");
+                  } catch (err: any) { setError(err.message); }
+                }}
+                className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-400 text-sm hover:bg-amber-500/25 transition-colors border border-amber-500/20"
+              >
+                🎲 Reset lượt quay
+              </button>
+            </div>
+
             {/* Reset room */}
             <div className="card border-red-500/20">
               <h3 className="font-semibold mb-2 text-red-400">Reset phòng</h3>

@@ -45,6 +45,8 @@ export const api = {
 
   resetRoom: (id: string) =>
     request(`/rooms/${id}/reset`, { method: 'PATCH' }),
+  resetDraws: (id: string) =>
+    request(`/rooms/${id}/reset-draws`, { method: 'PATCH' }),
 
   // Participants
   registerParticipant: (roomCode: string, data: Record<string, any>) =>
