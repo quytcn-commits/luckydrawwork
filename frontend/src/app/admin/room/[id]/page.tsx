@@ -35,6 +35,7 @@ export default function RoomDetailPage() {
   const [currentWinner, setCurrentWinner] = useState<any>(null);
   const [currentPrizeName, setCurrentPrizeName] = useState("");
   const [completedRoundPrize, setCompletedRoundPrize] = useState<any>(null);
+  const [roundTransitioning, setRoundTransitioning] = useState(false);
   const [error, setError] = useState("");
   const [view, setView] = useState<ViewType>("participants");
   const [uploading, setUploading] = useState(false);
@@ -118,17 +119,17 @@ export default function RoomDetailPage() {
 
         // Show round transition if prize is fully drawn (but NOT the last prize — let admin manually proceed)
         if (result.prize.drawn) {
-          // Check if there are still undrawn prizes left
           const hasMorePrizes = room.prizes.some((p: any) =>
             p.id !== prizeId && !(p.drawn || (p.winnerIds?.length || 0) >= (p.winnerCount || 1))
           );
           if (hasMorePrizes) {
+            setRoundTransitioning(true);
             setTimeout(() => {
               setCompletedRoundPrize({ id: prizeId, name: prizeName });
               setCurrentWinner(null);
+              setRoundTransitioning(false);
             }, 3000);
           }
-          // Last prize: keep winner displayed, admin clicks button to see results
         }
       }, 2500);
     } catch (err: any) {
@@ -558,7 +559,7 @@ export default function RoomDetailPage() {
                 <div className="text-center mb-8">
                   <button
                     onClick={() => handleDrawPrize(currentPrize.id, currentPrize.name)}
-                    disabled={spinning}
+                    disabled={spinning || roundTransitioning}
                     className="btn-primary !py-4 !px-10 text-lg disabled:opacity-50"
                   >
                     {spinning ? "Đang quay..." : `🎲 Quay lượt ${drawnCount + 1}/${totalCount}`}
@@ -750,6 +751,7 @@ export default function RoomDetailPage() {
                     setDrawResults([]);
                     setCurrentWinner(null);
                     setCompletedRoundPrize(null);
+                    setRoundTransitioning(false);
                     setView("draw");
                   } catch (err: any) { setError(err.message); }
                 }}
@@ -775,6 +777,7 @@ export default function RoomDetailPage() {
                     setDrawResults([]);
                     setCurrentWinner(null);
                     setCompletedRoundPrize(null);
+                    setRoundTransitioning(false);
                   } catch (err: any) { setError(err.message); }
                 }}
                 className="px-4 py-2 rounded-xl bg-red-500/15 text-red-400 text-sm hover:bg-red-500/25 transition-colors border border-red-500/20"
